@@ -234,6 +234,31 @@ def test_assert_called_with_missing_key_fails():
         tool.assert_called_with(limit=5)
 
 
+def test_assert_called_with_index_kwarg():
+    # 'index' is positional-only, so it may also be a real tool kwarg.
+    tool = MockTool("paginate", return_value="ok")
+    tool(index=3, query="hi")
+    tool.assert_called_with(index=3)
+    tool.assert_called_with(index=3, query="hi")
+    with pytest.raises(AssertionError):
+        tool.assert_called_with(index=4)
+
+
+def test_assert_called_with_positional_index_and_kwarg():
+    tool = MockTool("paginate", return_value="ok")
+    tool(index=1)
+    tool(index=2)
+    tool.assert_called_with(0, index=1)
+    tool.assert_called_with(1, index=2)
+
+
+def test_call_args_index_is_positional_only():
+    tool = MockTool("paginate", return_value="ok")
+    tool(index=7)
+    # Passed as a keyword, 'index' is a recorded kwarg, not the selector.
+    assert tool.call_args()["index"] == 7
+
+
 # ---------------------------------------------------------------------------
 # MockTool — reset
 # ---------------------------------------------------------------------------
@@ -363,3 +388,26 @@ def test_mock_tool_set_from_list():
     ts = MockToolSet(mocks)
     assert "x" in ts and "y" in ts
     assert ts.dispatch("x") == 1
+
+
+# ---------------------------------------------------------------------------
+# Misc — direct call, configure edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_side_effect_takes_priority_over_return_value():
+    tool = MockTool("x", return_value="rv", side_effect=lambda: "se")
+    assert tool() == "se"
+
+
+def test_configure_clears_side_effect_by_default():
+    tool = MockTool("x", side_effect=lambda: "se")
+    tool.configure(return_value="rv")
+    assert tool() == "rv"
+
+
+def test_mock_tool_set_dispatch_forwards_kwargs():
+    ts = MockToolSet()
+    ts.add("echo", side_effect=lambda msg: msg)
+    assert ts.dispatch("echo", msg="hello") == "hello"
+    ts["echo"].assert_called_with(msg="hello")

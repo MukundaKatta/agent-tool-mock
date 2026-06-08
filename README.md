@@ -60,7 +60,7 @@ tool.assert_called(times=2)        # called exactly 2 times
 tool.assert_called_once()          # shorthand for times=1
 tool.assert_not_called()
 tool.assert_called_with(key=val)   # last call had these kwargs
-tool.assert_called_with(index=0, key=val)  # specific call
+tool.assert_called_with(0, key=val)  # specific call (index is positional)
 ```
 
 #### Reconfigure / Reset

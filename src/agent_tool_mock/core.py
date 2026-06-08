@@ -122,8 +122,11 @@ class MockTool:
         """Return a copy of all recorded :class:`ToolCallRecord` objects."""
         return list(self._calls)
 
-    def call_args(self, index: int = -1) -> dict[str, Any]:
+    def call_args(self, index: int = -1, /) -> dict[str, Any]:
         """Return the kwargs dict for the call at *index* (default: last call).
+
+        *index* is positional-only so that a tool genuinely called with a
+        keyword argument named ``index`` can still be inspected.
 
         Args:
             index: Position in the call list.
@@ -167,11 +170,17 @@ class MockTool:
             f" {len(self._calls)} time(s)."
         )
 
-    def assert_called_with(self, index: int = -1, **expected: Any) -> None:
+    def assert_called_with(self, index: int = -1, /, **expected: Any) -> None:
         """Assert that the call at *index* used *expected* kwargs.
 
+        *index* is positional-only, so ``index`` may also appear in
+        *expected* to assert on a tool argument literally named ``index``::
+
+            tool.assert_called_with(index=3)        # assert kwarg index == 3
+            tool.assert_called_with(0, index=3)     # call 0, kwarg index == 3
+
         Args:
-            index: Which call to inspect (default: last).
+            index: Which call to inspect (default: last), given positionally.
             **expected: Expected keyword argument values.
 
         Raises:
